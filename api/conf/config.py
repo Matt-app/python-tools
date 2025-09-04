@@ -18,17 +18,18 @@ PG_CONFIG = {
     'DATABASE': 'bigmeta',
     'PORT': '5432',
     'MIN_CONN': 1,
-    'MAX_CONN': 10,
-    'CHARSET': 'utf8mb4',
-    'COLLATION': 'utf8mb4_unicode_ci'
+    'MAX_CONN': 10
 }
 
+# 标准化 MySQL 配置，修复端口、键名
 MYSQL_CONFIG = {
-    'host': '10.126.158.203',
-    'port': 5432,
-    'dbname': 'bigcustom',
-    'user': 'aloudata',
-    'password': '1qaz!QAZ',
+    'HOST': '10.126.158.203',
+    'PORT': 3306,
+    'DATABASE': 'bigcustom',
+    'USER': 'aloudata',
+    'PASSWORD': '1qaz!QAZ',
+    'MIN_CONN': 1,
+    'MAX_CONN': 10,
     'CHARSET': 'utf8mb4',
     'COLLATION': 'utf8mb4_unicode_ci'
 }

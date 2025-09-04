@@ -28,7 +28,8 @@ class SQLUtils:
         yield from r
 
     def get_upstream_guid_list(self, guid):
-        r = self.executor.query_upstream_column_guid_list([guid])
+        # 修复：传入单个 guid 给占位符 %s
+        r = self.executor.query_upstream_column_guid_list(guid)
         return r
 
     def put_column_lineage(self, lineage_list):

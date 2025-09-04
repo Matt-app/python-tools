@@ -71,14 +71,20 @@ class GraphUtils:
             if direction == 'INPUT':
                 return self._get_column_upstream_relation(guid_list)
 
-    def _query_upstream_guid_list(self, traversed_node):
-        query_result = self.su.get_upstream_guid_list(traversed_node)
-        if query_result:
-            _guid_list = ','.split(query_result)
-            logger.info('_query_upstream_guid_list: %s', _guid_list)
-        else:
-            _guid_list = []
-        return _guid_list
+    def _query_upstream_guid_list(self, dst_guid):
+        query_result = self.su.get_upstream_guid_list(dst_guid)
+        upstream = []
+        try:
+            # execute_script 返回的是 namedtuple 列表，字段名 upstream_columns
+            if query_result and len(query_result) > 0:
+                value = getattr(query_result[0], 'upstream_columns', None)
+                if value:
+                    # 入库格式为以逗号分隔的字符串
+                    upstream = [x for x in str(value).split(',') if x]
+        except Exception as e:
+            logger.error('parse upstream_columns error: %s', e)
+        logger.info('_query_upstream_guid_list(%s): %s', dst_guid, upstream)
+        return upstream
 
     def get_lineage(self, node_type, node_id_list, direction):
         """
@@ -117,7 +123,7 @@ class GraphUtils:
             # 更新结果列表并开启下次迭代
             for src_col_guid, _, dst_col_guid in relations:
                 lineage_result[dst_col_guid].add(src_col_guid)
-                if node_ids_dict[dst_col_guid]:
+                if node_ids_dict.get(dst_col_guid):
                     lineage_result[node_ids_dict[dst_col_guid]].add(src_col_guid)
                 _guid_list[src_col_guid] = dst_col_guid
             if _guid_list:

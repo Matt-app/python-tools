@@ -11,7 +11,8 @@ class MysqlConnector:
     数据库链接
     """
 
-    def __init__(self, min_conn, max_conn, database, user, password, host, port, charset, collation):
+    def __init__(self, min_conn, max_conn, database, user, password, host, port, charset, collation, connection_timeout=None):
+        # 仅传递 mysql-connector 支持的关键字
         self.pool = self._create_pool(
             min_conn=min_conn,
             max_conn=max_conn,
@@ -19,18 +20,20 @@ class MysqlConnector:
             user=user,
             password=password,
             host=host,
-            port=port,
+            port=int(port) if port is not None else None,
             charset=charset,
-            collation=collation
+            connection_timeout=connection_timeout
         )
 
     def _create_pool(self, min_conn, max_conn, **kwargs):
         """创建MySQL连接池"""
+        allowed_keys = {"host", "database", "user", "password", "port", "charset", "connection_timeout"}
+        conn_kwargs = {k: v for k, v in kwargs.items() if k in allowed_keys and v is not None}
         pool_config = {
             "pool_name": "mlas_pool",
             "pool_size": max_conn,  # 最大连接数
             "pool_reset_session": True,
-            **kwargs
+            **conn_kwargs
         }
 
         # 创建连接池
@@ -79,7 +82,6 @@ class MysqlConnector:
                     traceback.print_exc()
                     return 0
 
-
     def execute_stream_script(self, script: str, values=None):
         def _batch_fetch(batch_size=5000):
             while True:
@@ -101,7 +103,6 @@ class MysqlConnector:
                     logger.error('Error execution script, values: %s; script: %s', values, script)
                     traceback.print_exc()
                     yield None
-
         # 使用生成器避免全量加载内存
 
     def execute_script(self, script: str, values=None):

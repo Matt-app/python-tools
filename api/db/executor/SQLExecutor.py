@@ -27,9 +27,10 @@ class SQLExecutor:
             yield self.db_connector.execute_script(SQL_QUERY_COLUMN_LIST, (offset, limit))
             offset += limit
 
-    def query_upstream_column_guid_list(self, guid_list):
+    def query_upstream_column_guid_list(self, guid):
         from api.db.sql import SQL_QUERY_UPSTREAM_COLUMN_LIST
-        return self.db_connector.execute_script(SQL_QUERY_UPSTREAM_COLUMN_LIST, guid_list)
+        # 传入单个 guid，注意占位符为 %s
+        return self.db_connector.execute_script(SQL_QUERY_UPSTREAM_COLUMN_LIST, (guid,))
 
     def insert_column_lineage(self, data):
         from api.db.sql import SQL_INSERT_COLUMN_LINEAGE
