@@ -57,18 +57,17 @@ class NebulaExecutor:
                 microsec=value.microsecond,
             )
             casted_value.set_dtVal(datetime_value)
-        # TODO: add support for GeoSpatial
-        elif isinstance(value, list):
-            byte_list = []
-            for item in value:
-                byte_list.append(self._cast_value(item))
-            casted_value.set_lVal(NList(values=byte_list))
         elif isinstance(value, dict):
             # TODO: add support for NMap
             raise TypeError("Unsupported type: dict")
         else:
             raise TypeError(f"Unsupported type: {type(value)}")
         return casted_value
+
+    def _cast_go_value(self, guids):
+        """将 guid 列表格式化为 Nebula 的 VID 列表字面量，例如 "\"a\",\"b\""""
+        value = ', '.join(f'"{x}"' for x in guids)
+        return self._cast_value(value)
 
     def _limit_query_num(self, list_data):
         n = len(list_data)
@@ -98,8 +97,8 @@ class NebulaExecutor:
         from api.db.sql import NEBULA_QUERY_COLUMN_UPSTREAM_COLUMN
         limit_guids = self._limit_query_num(guids)
         for guid_list in limit_guids:
-            params = {'guid_list': self._cast_value(guid_list)}
-            resp = self.db_connector.execute_params(NEBULA_QUERY_COLUMN_UPSTREAM_COLUMN, params)
+            params = {'guid_list': self._cast_go_value(guid_list)}
+            resp = self.db_connector.execute_go_params(NEBULA_QUERY_COLUMN_UPSTREAM_COLUMN, params)
             _r.append(self._limit_query_result(resp))
         logger.info('nebula query batches=%d, total_input=%d, per_batch_limit=%d, result_limit=%d',
                     len(limit_guids), len(guids), self.limit, self.result_limit)
