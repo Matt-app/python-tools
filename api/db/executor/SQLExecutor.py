@@ -35,3 +35,37 @@ class SQLExecutor:
     def insert_column_lineage(self, data):
         from api.db.sql import SQL_INSERT_COLUMN_LINEAGE
         self.db_connector.execute_batch_script_no_fetch(SQL_INSERT_COLUMN_LINEAGE, data)
+
+
+class SQLExecutorTest:
+    """简单测试类，用于本地验证 SQLExecutor 的关键方法。"""
+    def __init__(self, db_type):
+        self.executor = SQLExecutor(db_type)
+
+    def test_query_column_guid_list(self):
+        gen = self.executor.query_column_guid_list(total=10, limit=5, offset=0)
+        first = next(gen, None)
+        print('query_column_guid_list first batch:', first)
+        return first
+
+    def test_query_upstream_column_guid_list(self, guid):
+        res = self.executor.query_upstream_column_guid_list(guid)
+        print('query_upstream_column_guid_list:', res)
+        return res
+
+    def test_insert_column_lineage(self):
+        # 仅做接口连通性演示，不实际写入
+        payload = [("a,b", "c")]
+        try:
+            self.executor.insert_column_lineage(payload)
+            print('insert_column_lineage executed')
+        except Exception as e:
+            print('insert_column_lineage error:', e)
+
+
+if __name__ == '__main__':
+    # 示例：按需替换为 POSTGRESQL/MYSQL 并补充 guid 值
+    tester = SQLExecutorTest('POSTGRESQL')
+    tester.test_query_column_guid_list()
+    # tester.test_query_upstream_column_guid_list('<some-guid>')
+    # tester.test_insert_column_lineage()

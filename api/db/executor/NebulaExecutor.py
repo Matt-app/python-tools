@@ -1,9 +1,9 @@
-import datetime
 from typing import Any
 
 from api.db.connector.NebulaConnector import NebulaConnector
 from nebula3.common.ttypes import Value, NList, Date, Time, DateTime
 from api.log import logger, timeit
+import datetime
 
 
 class NebulaExecutor:
@@ -57,17 +57,6 @@ class NebulaExecutor:
                 microsec=value.microsecond,
             )
             casted_value.set_dtVal(datetime_value)
-        # TODO: add support for GeoSpatial
-        elif isinstance(value, list):
-            byte_list = []
-            for item in value:
-                byte_list.append(self._cast_value(item))
-            casted_value.set_lVal(NList(values=byte_list))
-        elif isinstance(value, dict):
-            # TODO: add support for NMap
-            raise TypeError("Unsupported type: dict")
-        else:
-            raise TypeError(f"Unsupported type: {type(value)}")
         return casted_value
 
     def _limit_query_num(self, list_data):
@@ -106,9 +95,17 @@ class NebulaExecutor:
         return _r
 
 
+class NebulaExecutorTest:
+    """简单测试类，用于本地验证 NebulaExecutor 主功能。"""
+    def __init__(self):
+        self.executor = NebulaExecutor()
+
+    def test_query_column_upstream_column(self):
+        sample = ['database.hive.dwd_icc.dwd_icc.dwd_inr_pqt_unc_icc_user_follow_list_new.category_name_2']
+        r = self.executor.query_column_upstream_column(sample)
+        print(r)
+        return r
+
+
 if __name__ == '__main__':
-    ne = NebulaExecutor()
-    r = ne.query_column_upstream_column(
-        ['database.hive.dwd_icc.dwd_icc.dwd_inr_pqt_unc_icc_user_follow_list_new.category_name_2']
-    )
-    print(r)
+    NebulaExecutorTest().test_query_column_upstream_column()
