@@ -127,3 +127,9 @@ class MysqlConnector:
                     traceback.print_exc()
                     return []
 
+
+if __name__ == '__main__':
+    mc = MysqlConnector(1, 11, 'mlas', 'root', '123456'
+                        , '127.0.0.1', '3306', 'utf8mb4', 'utf8mb4_unicode_ci')
+    a = mc.execute_script('show databases;')
+    print(a)
