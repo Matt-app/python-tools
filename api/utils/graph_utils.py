@@ -3,7 +3,7 @@ from collections import defaultdict
 from api.node.node_relations import RelationNode
 from api.db.executor.NebulaExecutor import NebulaExecutor
 from api.utils.sql_utils import SQLUtils
-from api.log import logger
+from api.log import logger, timeit
 
 
 class GraphUtils:
@@ -36,6 +36,7 @@ class GraphUtils:
         self.traversed_set.update(check_data)
         return _traversed_nodes
 
+    @timeit('GraphUtils._get_column_upstream_relation')
     def _get_column_upstream_relation(self, guid_list: list):
         """
         输出 上/下游所有资产的热度，热度为相关列、表、资产数量
@@ -44,21 +45,49 @@ class GraphUtils:
         :return: set(tuple($src_col_guid, $mid_process_guid, $dst_col_guid))
         """
         result_set = set()
-        query_results_list = self.ne.query_column_upstream_column(
-            guid_list
-        )
+        query_results_list = self.ne.query_column_upstream_column(guid_list)
         for query_results in query_results_list:
-            for query_result in query_results.get('result', []):
-                column_upstream_column_list = query_result.get('data', [{}])
-                for column_upstream_column in column_upstream_column_list:
-                    column_upstream_column_meta_list = column_upstream_column.get('meta', [])
-                    if len(column_upstream_column_meta_list) == 3:
-                        src_col_guid = column_upstream_column_meta_list[0].get('id', '')
-                        mid_process_guid = column_upstream_column_meta_list[1].get('id', '')
-                        dst_col_guid = column_upstream_column_meta_list[2].get('id', '')
-                        result_set.add(self.column_lineage_tuple(src_col_guid, mid_process_guid, dst_col_guid))
+            # 兼容两种返回：
+            # 1) MATCH 返回的 meta 结构
+            # 2) GO FROM ... YIELD id() 返回的 row/columns 结构
+            results_key = 'result' if 'result' in query_results else ('results' if 'results' in query_results else None)
+            if not results_key:
+                continue
+            for query_result in query_results.get(results_key, []):
+                data_list = query_result.get('data', []) or []
+                columns = query_result.get('columns', []) or []
+                for item in data_list:
+                    if isinstance(item, dict) and 'meta' in item:
+                        meta_list = item.get('meta', []) or []
+                        if len(meta_list) == 3:
+                            src_col_guid = meta_list[0].get('id', '')
+                            mid_process_guid = meta_list[1].get('id', '')
+                            dst_col_guid = meta_list[2].get('id', '')
+                            result_set.add(self.column_lineage_tuple(src_col_guid, mid_process_guid, dst_col_guid))
+                    elif isinstance(item, dict) and 'row' in item:
+                        row_vals = item.get('row', []) or []
+                        # 根据列名映射，默认顺序为 src, mid, dst
+                        def _idx(name, default):
+                            try:
+                                return columns.index(name)
+                            except Exception:
+                                return default
+                        si, mi, di = _idx('src', 0), _idx('mid', 1), _idx('dst', 2)
+                        if max(si, mi, di) < len(row_vals):
+                            def _to_str(v):
+                                if isinstance(v, dict):
+                                    # 尝试常见键
+                                    for k in ('id', 's', 'str', 'val', 'value'):
+                                        if k in v:
+                                            return str(v[k])
+                                return str(v)
+                            src_col_guid = _to_str(row_vals[si])
+                            mid_process_guid = _to_str(row_vals[mi])
+                            dst_col_guid = _to_str(row_vals[di])
+                            result_set.add(self.column_lineage_tuple(src_col_guid, mid_process_guid, dst_col_guid))
         return result_set
 
+    @timeit('GraphUtils.get_relation')
     def get_relation(self, guid_list, node_type, direction):
         """
         todo 增加批量限制
@@ -71,6 +100,7 @@ class GraphUtils:
             if direction == 'INPUT':
                 return self._get_column_upstream_relation(guid_list)
 
+    @timeit('GraphUtils._query_upstream_guid_list')
     def _query_upstream_guid_list(self, dst_guid):
         query_result = self.su.get_upstream_guid_list(dst_guid)
         upstream = []
@@ -86,6 +116,7 @@ class GraphUtils:
         logger.info('_query_upstream_guid_list(%s): %s', dst_guid, upstream)
         return upstream
 
+    @timeit('GraphUtils.get_lineage')
     def get_lineage(self, node_type, node_id_list, direction):
         """
 

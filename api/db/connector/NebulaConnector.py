@@ -4,6 +4,7 @@ import logging
 from nebula3.gclient.net import ConnectionPool
 from nebula3.Config import Config
 from api.conf.config import NEBULA_CONFIG
+from api.log import timeit
 
 
 class NebulaConnector:
@@ -36,6 +37,7 @@ class NebulaConnector:
             NEBULA_CONFIG['user'], NEBULA_CONFIG['password']
         )
 
+    @timeit('NebulaConnector.execute_params')
     def execute_params(self, script, params):
         with self._get_session() as session:
             session.execute(f'USE {NEBULA_CONFIG["space"]};')
