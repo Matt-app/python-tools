@@ -45,7 +45,7 @@ class NebulaConnector:
             r_json = json.loads(r)
         return r_json
 
-    @timeit('NebulaConnector.execute_params')
+    @timeit('NebulaConnector.execute_go_params')
     def execute_go_params(self, script: str, params):
         with self._get_session() as session:
             session.execute(f'USE {NEBULA_CONFIG["space"]};')
@@ -54,3 +54,10 @@ class NebulaConnector:
             r = session.execute_json(script)
             r_json = json.loads(r)
         return r_json
+
+
+if __name__ == '__main__':
+    nc = NebulaConnector()
+    print(nc.execute_params('''
+    MATCH ()-[p1:column_input_process]->()-[p2:process_output_column]->(c) RETURN id(c) LIMIT 10000;
+    ''', None))

@@ -28,7 +28,7 @@ if __name__ == '__main__':
     logger.info('init SQLUtils')
     su = SQLUtils()
     logger.info('load column guid generator')
-    columns_list = su.get_columns(1000, 0, 100000)
+    columns_list = su.get_columns(1000, 0, 10000)
 
     use_multiproc = os.getenv('MULTIPROC', '0') == '1'
     if use_multiproc:
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     else:
         # 单进程：逐批处理并立即落库
         for column_list in columns_list:
-            batch_guids = [x.guid for x in column_list]
+            batch_guids = [x.column_guid for x in column_list]
             logger.info('get lineage start; batch size=%d', len(batch_guids))
             gu = GraphUtils()
             r = gu.get_lineage('COLUMN', batch_guids, 'INPUT')
@@ -66,4 +66,5 @@ if __name__ == '__main__':
             logger.info('batch done, inserted=%d', len(payload))
 
     logger.info('all done')
+
 

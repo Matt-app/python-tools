@@ -47,9 +47,6 @@ class GraphUtils:
         result_set = set()
         query_results_list = self.ne.query_column_upstream_column(guid_list)
         for query_results in query_results_list:
-            # 兼容两种返回：
-            # 1) MATCH 返回的 meta 结构
-            # 2) GO FROM ... YIELD id() 返回的 row/columns 结构
             results_key = 'result' if 'result' in query_results else ('results' if 'results' in query_results else None)
             if not results_key:
                 continue
@@ -57,33 +54,12 @@ class GraphUtils:
                 data_list = query_result.get('data', []) or []
                 columns = query_result.get('columns', []) or []
                 for item in data_list:
-                    if isinstance(item, dict) and 'meta' in item:
-                        meta_list = item.get('meta', []) or []
+                    if isinstance(item, dict) and 'row' in item:
+                        meta_list = item.get('row', []) or []
                         if len(meta_list) == 3:
-                            src_col_guid = meta_list[0].get('id', '')
-                            mid_process_guid = meta_list[1].get('id', '')
-                            dst_col_guid = meta_list[2].get('id', '')
-                            result_set.add(self.column_lineage_tuple(src_col_guid, mid_process_guid, dst_col_guid))
-                    elif isinstance(item, dict) and 'row' in item:
-                        row_vals = item.get('row', []) or []
-                        # 根据列名映射，默认顺序为 src, mid, dst
-                        def _idx(name, default):
-                            try:
-                                return columns.index(name)
-                            except Exception:
-                                return default
-                        si, mi, di = _idx('src', 0), _idx('mid', 1), _idx('dst', 2)
-                        if max(si, mi, di) < len(row_vals):
-                            def _to_str(v):
-                                if isinstance(v, dict):
-                                    # 尝试常见键
-                                    for k in ('id', 's', 'str', 'val', 'value'):
-                                        if k in v:
-                                            return str(v[k])
-                                return str(v)
-                            src_col_guid = _to_str(row_vals[si])
-                            mid_process_guid = _to_str(row_vals[mi])
-                            dst_col_guid = _to_str(row_vals[di])
+                            src_col_guid = meta_list[0]
+                            mid_process_guid = meta_list[1]
+                            dst_col_guid = meta_list[2]
                             result_set.add(self.column_lineage_tuple(src_col_guid, mid_process_guid, dst_col_guid))
         return result_set
 

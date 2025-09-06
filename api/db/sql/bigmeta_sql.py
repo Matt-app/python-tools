@@ -1,14 +1,16 @@
 QUERY_COLUMN_LIST = '''
-    select guid from bigmeta_entity_column bec
-    where bec.is_deleted= 0
-    order by guid_hash
-    offset %s
-    limit %s;
+    select column_guid from mlas_entity_column
+    order by id
+    limit %s, %s;
     '''
 QUERY_UPSTREAM_COLUMN_LIST = '''
-    select upstream_columns from mlas_column_lineage bec
+    select upstream_columns from mlas_lineage_column bec
     where dst_column_guid = %s;
     '''
 INSERT_COLUMN_LINEAGE = '''
-    insert into mlas_column_lineage(upstream_columns, dst_column_guid) values(%s, %s);
+    insert into mlas_lineage_column(upstream_columns, dst_column_guid) values(%s, %s);
+    '''
+
+INIT_COLUMN_GUID = '''
+    insert into mlas_entity_column(column_guid) values(%s);
     '''
