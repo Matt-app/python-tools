@@ -44,3 +44,13 @@ class NebulaConnector:
             r = session.execute_json_with_parameter(script, params=params)
             r_json = json.loads(r)
         return r_json
+
+    @timeit('NebulaConnector.execute_params')
+    def execute_go_params(self, script: str, params):
+        with self._get_session() as session:
+            session.execute(f'USE {NEBULA_CONFIG["space"]};')
+            for key in params:
+                script = script.replace(f'${key}', params.get(key).value)
+            r = session.execute_json(script)
+            r_json = json.loads(r)
+        return r_json
