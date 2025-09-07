@@ -10,7 +10,7 @@ class NebulaExecutor:
     def __init__(self):
         self.db_connector = NebulaConnector()
         # 每次入参 guid 的最大数量
-        self.limit = 10
+        self.limit = 1000
         # 每次查询返回最多的结果数量（按行截断）
         self.result_limit = 1000
 
@@ -99,7 +99,7 @@ class NebulaExecutor:
         for guid_list in limit_guids:
             params = {'guid_list': self._cast_go_value(guid_list)}
             resp = self.db_connector.execute_go_params(NEBULA_QUERY_COLUMN_UPSTREAM_COLUMN, params)
-            _r.append(self._limit_query_result(resp))
+            _r.append(resp)
         logger.info('nebula query batches=%d, total_input=%d, per_batch_limit=%d, result_limit=%d',
                     len(limit_guids), len(guids), self.limit, self.result_limit)
         return _r

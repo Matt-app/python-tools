@@ -67,6 +67,8 @@ class GraphUtils:
     def get_relation(self, guid_list, node_type, direction):
         """
         todo 增加批量限制
+        todo check guid 合法
+        todo check guid 是否为临时表
         :param guid_list:
         :param node_type: COLUMN/
         :param direction: INPUT/OUTPUT
@@ -102,40 +104,46 @@ class GraphUtils:
         :return:
         """
         lineage_result = defaultdict(set)
+        reverse_lineage_result = defaultdict(set)
 
-        def _dfs(index, _node_type, all_node_ids_dict: dict, _direction):
+        def _dfs(index, _node_type, all_node_ids: list, _direction):
             """
 
             :param index: 层级
             :param _node_type: 实体类型
-            :param all_node_ids_dict: 实体字典，格式为{上游: 下游}
+            :param all_node_ids: 实体列表
             :param _direction: 方向
             :return:
             """
-            logger.info(f'start get {",".join(list(str(x) for x in all_node_ids_dict.values()))} {_direction} lineage.')
-            _guid_list = {}
+            logger.info(f'start get {len(all_node_ids)} {_direction} lineage.')
+            _guid_list = set()
             index += 1
             # 获取遍历过的节点
-            traversed_node_set = self._get_traversed_nodes(set(all_node_ids_dict.keys()))
+            traversed_node_set = self._get_traversed_nodes(set(all_node_ids))
+            # 根据数据库信息更新结果列表，防止重复溯源
+            for node_id in all_node_ids:
+                upstream_guid_list = self._query_upstream_guid_list(node_id)
+                if upstream_guid_list:
+                    lineage_result[node_id].update(upstream_guid_list)
+                    traversed_node_set.add(node_id)
+
             # 更新实体字典，删除遍历过的节点
-            node_ids_dict = {x: y for x, y in all_node_ids_dict.items() if x not in traversed_node_set}
-            # 更新结果列表
-            for traversed_node in traversed_node_set:
-                upstream_guid_list = self._query_upstream_guid_list(traversed_node)
-                lineage_result[traversed_node].update(upstream_guid_list)
-                if all_node_ids_dict[traversed_node]:
-                    lineage_result[all_node_ids_dict[traversed_node]].update(upstream_guid_list)
+            all_node_ids = [x for x in all_node_ids if x not in traversed_node_set]
             # 获取血缘信息
-            relations = self.get_relation(list(node_ids_dict.keys()), _node_type, _direction)
+            relations = self.get_relation(all_node_ids, _node_type, _direction)
             # 更新结果列表并开启下次迭代
             for src_col_guid, _, dst_col_guid in relations:
+                # 更新逆向结果集
+                reverse_lineage_result[src_col_guid].add(dst_col_guid)
+                reverse_lineage_result[src_col_guid].update(reverse_lineage_result.get(dst_col_guid, set()))
+                # 更新结果集
                 lineage_result[dst_col_guid].add(src_col_guid)
-                if node_ids_dict.get(dst_col_guid):
-                    lineage_result[node_ids_dict[dst_col_guid]].add(src_col_guid)
-                _guid_list[src_col_guid] = dst_col_guid
+                for dcg in reverse_lineage_result.get(dst_col_guid, set()):
+                    lineage_result[dcg].update(lineage_result.get(dst_col_guid, set()))
+                _guid_list.add(src_col_guid)
             if _guid_list:
-                _dfs(index, _node_type, _guid_list, _direction)
-        _dfs(0, node_type,{x: None for x in node_id_list}, direction)
+                _dfs(index, _node_type, list(_guid_list), _direction)
+        _dfs(0, node_type,node_id_list, direction)
         return lineage_result
 
 

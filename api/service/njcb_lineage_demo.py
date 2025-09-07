@@ -24,11 +24,11 @@ def process_batch(batch_guids):
     return [(','.join(sorted(srcs)), dst) for dst, srcs in r.items()]
 
 
-if __name__ == '__main__':
+def do():
     logger.info('init SQLUtils')
     su = SQLUtils()
     logger.info('load column guid generator')
-    columns_list = su.get_columns(1000, 0, 10000)
+    columns_list = su.get_columns(1, 0, 10)
 
     use_multiproc = os.getenv('MULTIPROC', '0') == '1'
     if use_multiproc:
@@ -62,9 +62,15 @@ if __name__ == '__main__':
             gu = GraphUtils()
             r = gu.get_lineage('COLUMN', batch_guids, 'INPUT')
             payload = [(','.join(sorted(srcs)), dst) for dst, srcs in r.items()]
+            batch_size = len(payload)
             su.batch_put_check(su.put_column_lineage, payload, always=1)
-            logger.info('batch done, inserted=%d', len(payload))
+            logger.info('batch done, inserted=%d', batch_size)
 
     logger.info('all done')
 
 
+if __name__ == '__main__':
+    # gu = GraphUtils()
+    # r = gu.get_lineage('COLUMN', ['database.hive.dws_people.dws_people.t_payroll_employee_statistic_m.edu_level'], 'INPUT')
+    # print(r)
+    do()
