@@ -4,11 +4,20 @@ QUERY_COLUMN_LIST = '''
     limit %s, %s;
     '''
 QUERY_UPSTREAM_COLUMN_LIST = '''
-    select upstream_columns from mlas_lineage_column bec
+    select upstream_columns from mlas_lineage_column
     where dst_column_guid = %s;
     '''
+
+QUERY_TAB_GUID = '''
+    select C3 as table_guid, C11 as table_type from bigmeta_entity_table
+    where C30 = '0';
+    '''
+
 INSERT_COLUMN_LINEAGE = '''
-    insert into mlas_lineage_column(upstream_columns, dst_column_guid) values(%s, %s);
+    insert into mlas_lineage_column(upstream_columns, dst_column_guid) 
+    values(%s, %s)
+    on duplicate key update
+    upstream_columns = values(upstream_columns);
     '''
 
 INIT_COLUMN_GUID = '''

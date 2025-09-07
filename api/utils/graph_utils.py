@@ -13,6 +13,10 @@ class GraphUtils:
         self.column_lineage_tuple = RelationNode.make_simple_line_col_tuple()
         # 缓存
         self.su = SQLUtils()
+        self.table_dict = None
+
+    def init_table_list(self):
+        self.table_dict = {x.table_guid: x.table_type for x in self.su.get_tables()}
 
     def _check_traversed_node(self, check_data: tuple):
         """
@@ -74,9 +78,51 @@ class GraphUtils:
         :param direction: INPUT/OUTPUT
         :return: COLUMN-INPUT: set(tuple($src_col_guid, $mid_process_guid, $dst_col_guid))
         """
+        relation_result_d = []
         if node_type == 'COLUMN':
             if direction == 'INPUT':
-                return self._get_column_upstream_relation(guid_list)
+                relation_result = self._get_column_upstream_relation(guid_list)
+                for relation in relation_result:
+                    src_table_type = self.table_dict.get('.'.join(relation.src_column_guid.split('.')[:-1]))
+                    if src_table_type:
+                        if src_table_type in ('TABLE', 'VIEW'):
+                            relation_result_d.append(relation)
+                        elif src_table_type == 'TEMP_TABLE':
+                            relation_result_d.extend(
+                                self.get_penetration_relation(
+                                    relation.dst_column_guid, relation.src_column_guid, node_type, direction
+                                )
+                            )
+                        else:
+                            raise Exception('get_relation error')
+                return relation_result_d
+
+    def get_penetration_relation(self, ana_guid, guid, node_type, direction):
+        traversed_node_set = set()
+        relation_result_d = []
+
+        def _dfs():
+            if guid in traversed_node_set:
+                return []
+            else:
+                traversed_node_set.add(guid)
+            if node_type == 'COLUMN':
+                if direction == 'INPUT':
+                    relation_result = self._get_column_upstream_relation([guid])
+                    for relation in relation_result:
+                        src_table_type = self.table_dict.get('.'.join(relation.src_column_guid.split('.')[:-1]))
+                        if src_table_type:
+                            if src_table_type == 'TABLE':
+                                relation_result_d.append(relation.src_column_guid)
+                            elif src_table_type == 'TEMP_TABLE':
+                                relation_result_d.extend(
+                                    self.get_penetration_relation(ana_guid, src_table_type, node_type, direction)
+                                )
+                    penetration_relation_result = [
+                        self.column_lineage_tuple(x, '', ana_guid) for x in relation_result_d
+                    ]
+                    return penetration_relation_result
+        return _dfs()
 
     @timeit('GraphUtils._query_upstream_guid_list')
     def _query_upstream_guid_list(self, dst_guid):

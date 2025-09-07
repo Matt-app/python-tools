@@ -3,7 +3,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from itertools import islice
 from multiprocessing import cpu_count
 
-from api.log import logger
+from api.log import logger, timeit
 from api.utils.sql_utils import SQLUtils
 from api.utils.graph_utils import GraphUtils
 
@@ -19,17 +19,20 @@ def chunks(iterable, size):
 
 def process_batch(batch_guids):
     gu = GraphUtils()
+    gu.init_table_list()
     r = gu.get_lineage('COLUMN', batch_guids, 'INPUT')
     # 返回 (upstream_columns, dst_column_guid) 顺序，满足 INSERT SQL
     return [(','.join(sorted(srcs)), dst) for dst, srcs in r.items()]
 
 
+@timeit()
 def do():
     logger.info('init SQLUtils')
     su = SQLUtils()
     logger.info('load column guid generator')
-    columns_list = su.get_columns(1, 0, 10)
-
+    columns_list = su.get_columns(100, 0, 1000)
+    gu = GraphUtils()
+    gu.init_table_list()
     use_multiproc = os.getenv('MULTIPROC', '0') == '1'
     if use_multiproc:
         workers = max(1, min(cpu_count(), 4))
@@ -59,7 +62,6 @@ def do():
         for column_list in columns_list:
             batch_guids = [x.column_guid for x in column_list]
             logger.info('get lineage start; batch size=%d', len(batch_guids))
-            gu = GraphUtils()
             r = gu.get_lineage('COLUMN', batch_guids, 'INPUT')
             payload = [(','.join(sorted(srcs)), dst) for dst, srcs in r.items()]
             batch_size = len(payload)
@@ -71,6 +73,7 @@ def do():
 
 if __name__ == '__main__':
     # gu = GraphUtils()
-    # r = gu.get_lineage('COLUMN', ['database.hive.dws_people.dws_people.t_payroll_employee_statistic_m.edu_level'], 'INPUT')
+    # gu.init_table_list()
+    # r = gu.get_lineage('COLUMN', ['database.hive.ads_finance.ads_finance.tmp_t_fob_forecast_oil_base_kpi_m_12.act_fried_area_qty'], 'INPUT')
     # print(r)
     do()

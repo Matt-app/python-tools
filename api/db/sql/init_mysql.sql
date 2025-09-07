@@ -6,6 +6,14 @@ gmt_update timestamp,
 primary key (id)
 );
 
+create table mlas_entity_column_mcd(
+id bigint not null auto_increment,
+column_guid varchar(512),
+gmt_create timestamp,
+gmt_update timestamp,
+primary key (id)
+);
+
 create table mlas_lineage_column(
 id bigint not null auto_increment,
 upstream_columns varchar(512),

@@ -32,6 +32,10 @@ class SQLExecutor:
         # 传入单个 guid，注意占位符为 %s
         return self.db_connector.execute_script(SQL_QUERY_UPSTREAM_COLUMN_LIST, (guid,))
 
+    def query_table_guid_list(self):
+        from api.db.sql import SQL_QUERY_TAB_GUID
+        return self.db_connector.execute_script(SQL_QUERY_TAB_GUID)
+
     def insert_column_lineage(self, data):
         from api.db.sql import SQL_INSERT_COLUMN_LINEAGE
         self.db_connector.execute_batch_script_no_fetch(SQL_INSERT_COLUMN_LINEAGE, data)

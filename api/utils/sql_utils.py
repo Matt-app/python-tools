@@ -27,6 +27,10 @@ class SQLUtils:
         r = self.executor.query_column_guid_list(total, limit, offset)
         yield from r
 
+    def get_tables(self):
+        r = self.executor.query_table_guid_list()
+        return r
+
     def get_upstream_guid_list(self, guid):
         # 修复：传入单个 guid 给占位符 %s
         r = self.executor.query_upstream_column_guid_list(guid)

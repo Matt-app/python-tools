@@ -106,8 +106,6 @@ class NebulaExecutor:
 
 
 if __name__ == '__main__':
-
-
     ne = NebulaExecutor()
     r = ne.query_column_upstream_column(
         ['database.hive.dwd_icc.dwd_icc.dwd_inr_pqt_unc_icc_user_follow_list_new.category_name_2']
