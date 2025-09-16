@@ -32,6 +32,19 @@ class SQLExecutor:
         # 传入单个 guid，注意占位符为 %s
         return self.db_connector.execute_script(SQL_QUERY_UPSTREAM_COLUMN_LIST, (guid,))
 
+    def query_upstream_column_guid_list_batch(self, guids):
+        """
+        批量查询多个目标列的上游血缘
+        :param guids: list[str]
+        :return: 查询结果列表，每行包含 dst_column_guid, upstream_columns
+        """
+        if not guids:
+            return []
+        from api.db.sql import SQL_QUERY_UPSTREAM_COLUMN_LIST_BATCH
+        placeholders = ','.join(['%s'] * len(guids))
+        sql = SQL_QUERY_UPSTREAM_COLUMN_LIST_BATCH.format(placeholders=placeholders)
+        return self.db_connector.execute_script(sql, tuple(guids))
+
     def query_table_guid_list(self):
         from api.db.sql import SQL_QUERY_TAB_GUID
         return self.db_connector.execute_script(SQL_QUERY_TAB_GUID)

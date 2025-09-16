@@ -1,0 +1,22 @@
+Index: .idea/dataSources.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"DataSourceManagerImpl\" format=\"xml\" multifile-model=\"true\">\n    <data-source source=\"LOCAL\" name=\"bigmeta@10.126.158.203\" uuid=\"0ddb31bc-03ca-41b7-b431-e344461bbf99\">\n      <driver-ref>postgresql</driver-ref>\n      <synchronize>true</synchronize>\n      <remarks>mcd sit</remarks>\n      <jdbc-driver>org.postgresql.Driver</jdbc-driver>\n      <jdbc-url>jdbc:postgresql://10.126.158.203:5432/bigmeta</jdbc-url>\n      <working-dir>$ProjectFileDir$</working-dir>\n    </data-source>\n  </component>\n</project>
+===================================================================
+diff --git a/.idea/dataSources.xml b/.idea/dataSources.xml
+--- a/.idea/dataSources.xml	
++++ b/.idea/dataSources.xml	
+@@ -9,5 +9,12 @@
+       <jdbc-url>jdbc:postgresql://10.126.158.203:5432/bigmeta</jdbc-url>
+       <working-dir>$ProjectFileDir$</working-dir>
+     </data-source>
++    <data-source source="LOCAL" name="mysql@127.0.0.1" uuid="b8d2101a-1bc0-4c38-8590-920fee9bc470">
++      <driver-ref>mysql.8</driver-ref>
++      <synchronize>true</synchronize>
++      <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
++      <jdbc-url>jdbc:mysql://127.0.0.1:3306</jdbc-url>
++      <working-dir>$ProjectFileDir$</working-dir>
++    </data-source>
+   </component>
+ </project>
+\ No newline at end of file

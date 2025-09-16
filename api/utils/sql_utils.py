@@ -36,6 +36,14 @@ class SQLUtils:
         r = self.executor.query_upstream_column_guid_list(guid)
         return r
 
+    def get_upstream_guid_list_batch(self, guids):
+        """
+        批量查询多个目标列的上游血缘
+        :param guids: list[str]
+        :return: list[namedtuple(dst_column_guid, upstream_columns)]
+        """
+        return self.executor.query_upstream_column_guid_list_batch(guids)
+
     def put_column_lineage(self, lineage_list):
         r = self.executor.insert_column_lineage(lineage_list)
         return r

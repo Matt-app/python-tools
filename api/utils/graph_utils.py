@@ -164,18 +164,36 @@ class GraphUtils:
             logger.info(f'start get {len(all_node_ids)} {_direction} lineage.')
             _guid_list = set()
             index += 1
-            # 获取遍历过的节点
+            # 获取遍历过的节点（并记录当前批次到全局已遍历集合）
             traversed_node_set = self._get_traversed_nodes(set(all_node_ids))
-            # 根据数据库信息更新结果列表，防止重复溯源
-            for node_id in all_node_ids:
-                upstream_guid_list = self._query_upstream_guid_list(node_id)
-                if upstream_guid_list:
-                    lineage_result[node_id].update(upstream_guid_list)
-                    traversed_node_set.add(node_id)
-
-            # 更新实体字典，删除遍历过的节点
+            # 先使用批量SQL查询命中已有血缘，避免逐个查询与不必要的图检索
+            candidates = [x for x in all_node_ids if x not in traversed_node_set]
+            if candidates:
+                batch_size = getattr(self.su, 'limit', 1000) or 1000
+                for i in range(0, len(candidates), batch_size):
+                    batch = candidates[i:i + batch_size]
+                    try:
+                        rows = self.su.get_upstream_guid_list_batch(batch)
+                    except Exception as e:
+                        logger.error('batch get_upstream_guid_list error: %s', e)
+                        rows = []
+                    for row in rows or []:
+                        dst = getattr(row, 'dst_column_guid', None)
+                        value = getattr(row, 'upstream_columns', None)
+                        if not dst:
+                            continue
+                        if value:
+                            srcs = [x for x in str(value).split(',') if x]
+                            if srcs:
+                                lineage_result[dst].update(srcs)
+                                # 命中缓存的目标无需继续向图数据库查询
+                                traversed_node_set.add(dst)
+            # 更新实体字典，删除遍历过的节点（包括已从DB命中的）
             all_node_ids = [x for x in all_node_ids if x not in traversed_node_set]
-            # 获取血缘信息
+            if not all_node_ids:
+                # 当前层所有节点均已由DB命中，终止继续向上游检索
+                return
+            # 获取血缘信息（图数据库批量查询）
             relations = self.get_relation(all_node_ids, _node_type, _direction)
             # 更新结果列表并开启下次迭代
             for src_col_guid, _, dst_col_guid in relations:
