@@ -104,10 +104,20 @@ class NebulaExecutor:
                     len(limit_guids), len(guids), self.limit, self.result_limit)
         return _r
 
+    @timeit('NebulaExecutor.query_test')
+    def query_test(self, script):
+        resp = self.db_connector.execute_go_params(script, None)
+        return resp
+
 
 if __name__ == '__main__':
     ne = NebulaExecutor()
-    r = ne.query_column_upstream_column(
-        ['database.hive.dwd_icc.dwd_icc.dwd_inr_pqt_unc_icc_user_follow_list_new.category_name_2']
-    )
+    # r = ne.query_column_upstream_column(
+    #     ['database.hive.dwd_icc.dwd_icc.dwd_inr_pqt_unc_icc_user_follow_list_new.category_name_2']
+    # )
+    r = ne.query_test('''
+        go 3 steps from 'database.hive.ads_delivery.ads_delivery.t_delivery_third_party_store_score_m.us_code' over *
+        YIELD _path AS path    
+    ''')
+
     print(r)

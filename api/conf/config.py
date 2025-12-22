@@ -34,6 +34,9 @@ MYSQL_CONFIG = {
     'COLLATION': 'utf8mb4_unicode_ci'
 }
 
+# SQL 解析接口的并发上限（同一进程内生效）。超出并发的请求会等待空闲。
+SQL_PARSE_MAX_CONCURRENCY = 4
+
 MAPPING = {
     'tags': {
         'table': 'output_tables',
